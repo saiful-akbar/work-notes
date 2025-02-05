@@ -1,0 +1,2 @@
+# work-notes
+Catatan pekerjaan
