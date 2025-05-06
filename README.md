@@ -13,7 +13,7 @@
 -- Parameters
 --
 SET @store_name = UPPER(''); -- Masukan nama toko (Harus sesuai dengan J-Stock).
-SET @date_selected = CURRENT_DATE; -- Masukan tanggal yyyy-mm-dd
+SET @date_selected = CURRENT_DATE; -- Masukan tanggal SO (format: yyyy-mm-dd)
 SET @audit = 'ferdi'; -- Username audit
 
 
