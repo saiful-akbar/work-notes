@@ -76,6 +76,9 @@ SELECT
     sales_group_store_no_stock.qty AS 'Sales Group Store No Stock (Qty)',
     sales_group_store_no_stock.gross AS 'Sales Group Store No Stock (Gross)'
 
+--
+-- Mengambil data stock hasil audit
+--
 FROM (
     SELECT
         UPPER(ms.store_name) AS store_name,
@@ -96,7 +99,8 @@ FROM (
 
 
 --
--- Rata-rata Sales 3 Bulan Terakhir (bulan ke-4 s.d. ke-2)
+-- Rata-rata Sales 3 Bulan Terakhir
+-- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
     SELECT
@@ -117,6 +121,7 @@ CROSS JOIN (
 
 --
 -- Data Stock Tanpa Penjualan dalam 3 Bulan Terakhir
+-- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
     SELECT
@@ -139,8 +144,8 @@ CROSS JOIN (
 
 
 --
--- Mengambil data item yang memiliki penjualan
--- tetapi tidak memiliki stock.
+-- Sales 3 bulan yang tidak memiliki stock
+-- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
     SELECT
@@ -164,8 +169,8 @@ CROSS JOIN (
 
 
 --
--- Mengambil data item yang tidak memiliki stok tetapi
--- memiliki penjualan pada group store selama 3 bulan terakhir.
+-- Sales by group store 3 bulan yang tidak memiliki stock.
+-- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
     SELECT
@@ -200,5 +205,6 @@ CROSS JOIN (
 
     WHERE stock.qty IS NULL
 ) AS sales_group_store_no_stock;
+
 
 ```
