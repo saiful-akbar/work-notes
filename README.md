@@ -12,9 +12,9 @@
 --
 -- Parameters
 --
-SET @store_name = UPPER('Carrefour Cempaka Putih');
-SET @date_selected = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY);
-SET @audit = 'ferdi';
+SET @store_name = UPPER(''); -- Masukan nama toko (Harus sesuai dengan J-Stock).
+SET @date_selected = CURRENT_DATE; -- Masukan tanggal yyyy-mm-dd
+SET @audit = 'ferdi'; -- Username audit
 
 
 --
