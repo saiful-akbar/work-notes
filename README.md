@@ -54,9 +54,9 @@ SELECT
     DATE(msd.input_time) AS 'SO Date',
     mr.region AS 'Region',
     msr.sub_region AS 'Sub Region',
-    COUNT(msd.item) AS 'Total SKU',
-    SUM(msd.stock) AS 'Total Qty',
-    SUM(mdi.item_price_a * msd.stock) AS 'Total Gross'
+    COUNT(msd.item) AS 'Stock SKU',
+    SUM(msd.stock) AS 'Stock Qty',
+    SUM(mdi.item_price_a * msd.stock) AS 'Stock Gross'
 FROM stock_db.master_stock_daily AS msd
 INNER JOIN stock_db.master_store AS ms ON msd.store = ms.id
 INNER JOIN stock_db.master_data_item AS mdi ON msd.item = mdi.item_code
