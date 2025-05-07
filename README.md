@@ -55,29 +55,35 @@ SELECT
     daily_stock.sku AS 'Stock (SKU)',
     daily_stock.qty AS 'Stock (Qty)',
     daily_stock.gross AS 'Stock (Gross)',
+    
+    
+    -- 2. Estimasi sales.
+    estimasi_sales.sku AS 'Estimasi Sales (SKU)',
+    estimasi_sales.qty AS 'Estimasi Sales (Qty)',
+    estimasi_sales.gross AS 'Estimasi Sales (Gross)',
 
-    -- 2. Rata-rata Sales 3 Bulan Terakhir
+    -- 3. Rata-rata Sales 3 Bulan Terakhir
     sales_avg.sku AS 'Sales Avg (SKU)',
     sales_avg.qty AS 'Sales Avg (Qty)',
     sales_avg.gross AS 'Sales Avg (Gross)',
 
-    -- 3. Stock Tanpa Penjualan
+    -- 4. Stock Tanpa Penjualan
     stock_no_sales.sku AS 'Stock No Sales (SKU)',
     stock_no_sales.qty AS 'Stock No Sales (Qty)',
     stock_no_sales.gross AS 'Stock No Sales (Gross)',
 
-    -- 4. Item Terjual tapi Tidak Ada Stock
+    -- 5. Item Terjual tapi Tidak Ada Stock
     sales_no_stock.sku AS 'Sales No Stock (SKU)',
     sales_no_stock.qty AS 'Sales No Stock (Qty)',
     sales_no_stock.gross AS 'Sales No Stock (Gross)',
 
-    -- 5. Item Terjual di Group Store tapi Tidak Ada Stock
+    -- 6. Item Terjual di Group Store tapi Tidak Ada Stock
     sales_group_store_no_stock.sku AS 'Sales Group Store No Stock (SKU)',
     sales_group_store_no_stock.qty AS 'Sales Group Store No Stock (Qty)',
     sales_group_store_no_stock.gross AS 'Sales Group Store No Stock (Gross)'
 
 --
--- Mengambil data stock hasil audit
+-- 1. Mengambil data stock hasil audit
 --
 FROM (
     SELECT
@@ -90,7 +96,7 @@ FROM (
         SUM(mdi.item_price_a * msd.stock) AS gross
     FROM stock_db.master_stock_daily AS msd
     INNER JOIN stock_db.master_store AS ms ON msd.store = ms.id
-    INNER JOIN stock_db.master_data_item AS mdi ON msd.item = mdi.item_code
+    LEFT JOIN stock_db.master_data_item AS mdi ON msd.item = mdi.item_code
     LEFT JOIN stock_db.master_region AS mr ON ms.store_region = mr.id
     LEFT JOIN stock_db.master_sub_region AS msr ON ms.store_sub_region = msr.id
     WHERE msd.store = @store_id AND DATE(msd.input_time) = @date_selected AND msd.input_by = @audit
@@ -99,7 +105,71 @@ FROM (
 
 
 --
--- Rata-rata Sales 3 Bulan Terakhir
+-- 2. Estimasi sales.
+--
+CROSS JOIN (
+	SELECT
+		COUNT(sku) AS sku,
+		SUM(qty) AS qty,
+		SUM(gross) AS gross
+	FROM (
+		SELECT
+			master_item.item_code AS sku,
+			SUM((COALESCE(stock_awal.qty, 0) + COALESCE(surat_jalan.qty, 0) - COALESCE(retur.qty, 0)) - COALESCE(audit_stock.qty, 0)) AS qty,
+			SUM(master_item.item_price_a * ((COALESCE(stock_awal.qty, 0) + COALESCE(surat_jalan.qty, 0) - COALESCE(retur.qty, 0)) - COALESCE(audit_stock.qty, 0))) AS gross
+		FROM stock_db.master_data_item AS master_item
+		
+		-- Stock awal
+		LEFT JOIN (
+			SELECT sam.code AS item_code, SUM(sam.stock) AS qty
+			FROM stock_db.stock_awal_monthly AS sam
+			WHERE sam.store = @store_id
+				AND sam.`year` = YEAR(@date_selected)
+				AND sam.`month` = MONTH(@date_selected)
+			GROUP BY sam.code
+		) AS stock_awal ON master_item.item_code = stock_awal.item_code
+		
+		-- Surat jalan
+		LEFT JOIN (
+			SELECT item AS item_code, SUM(qty) AS qty
+			FROM stock_db.master_sj_daily
+			WHERE store = @store_id
+				AND DATE(input_time)
+					BETWEEN DATE_FORMAT(@date_selected, '%Y-%m-%01')
+					AND DATE_SUB(@date_selected, INTERVAL 1 DAY)
+			GROUP BY item
+		) AS surat_jalan ON master_item.item_code = surat_jalan.item_code
+		
+		-- Return
+		LEFT JOIN (
+			SELECT item AS item_code, SUM(qty) AS qty
+			FROM stock_db.master_retur_daily
+			WHERE store = @store_id
+				AND DATE(input_time)
+					BETWEEN DATE_FORMAT(@date_selected, '%Y-%m-%01')
+					AND DATE_SUB(@date_selected, INTERVAL 1 DAY)
+			GROUP BY item
+		) retur ON master_item.item_code = retur.item_code
+		
+		-- Audit stock
+		LEFT JOIN (
+			SELECT item AS item_code, SUM(stock) AS qty
+			FROM stock_db.master_stock_daily
+			WHERE store = @store_id
+				AND DATE(input_time) = @date_selected
+				AND input_by = @audit
+			GROUP BY item
+		) AS audit_stock ON master_item.item_code = audit_stock.item_code
+		
+		GROUP BY master_item.item_code
+		HAVING qty <> 0
+		ORDER BY master_item.item_code ASC
+	) AS estimasi_sales
+) AS estimasi_sales
+
+
+--
+-- 3. Rata-rata Sales 3 Bulan Terakhir
 -- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
@@ -120,7 +190,7 @@ CROSS JOIN (
 
 
 --
--- Data Stock Tanpa Penjualan dalam 3 Bulan Terakhir
+-- 4. Data Stock Tanpa Penjualan dalam 3 Bulan Terakhir
 -- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
@@ -144,7 +214,7 @@ CROSS JOIN (
 
 
 --
--- Sales 3 bulan yang tidak memiliki stock
+-- 5. Sales 3 bulan yang tidak memiliki stock
 -- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
@@ -169,7 +239,7 @@ CROSS JOIN (
 
 
 --
--- Sales by group store 3 bulan yang tidak memiliki stock.
+-- 6. Sales by group store 3 bulan yang tidak memiliki stock.
 -- Contoh: Jika saat ini bulan mei maka ambil data sales dari Januari s.d. Maret.
 --
 CROSS JOIN (
@@ -205,6 +275,4 @@ CROSS JOIN (
 
     WHERE stock.qty IS NULL
 ) AS sales_group_store_no_stock;
-
-
 ```
