@@ -277,3 +277,62 @@ CROSS JOIN (
     WHERE stock.qty IS NULL
 ) AS sales_group_store_no_stock;
 ```
+
+## 2.2 Query untuk mengambil rekomendasi stok awal
+```sql
+-- Cukup ubah tahun dan bulan.
+SET @tanggal = '2025-07-01';
+
+SELECT
+  UPPER(region.name) AS 'Region',
+  UPPER(sub_region.sub_region) AS 'Sub Region',
+  UPPER(store.store_name) AS 'Store Name',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL 1 DAY) THEN stock.total ELSE 0 END) AS 'Stok Pulang 30 Juni 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL 0 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 01 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL 0 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 01 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -1 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 02 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -1 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 02 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -2 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 03 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -2 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 03 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -3 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 04 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -3 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 04 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -4 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 05 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -4 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 05 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -5 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 06 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -5 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 06 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -6 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 07 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -6 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 07 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -7 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 08 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -7 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 08 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -8 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 09 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -8 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 09 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 1 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -9 DAY) THEN stock.total ELSE 0 END) AS 'Stock Masuk 10 Juli 2025',
+  SUM(CASE WHEN stock.so_type = 2 AND stock.so_date = DATE_SUB(@tanggal, INTERVAL -9 DAY) THEN stock.total ELSE 0 END) AS 'Stock Pulang 10 Juli 2025'
+FROM master_store AS store
+
+LEFT JOIN (
+  SELECT id, region AS name
+  FROM master_region
+) AS region ON store.store_region = region.id
+
+LEFT JOIN (
+  SELECT id, sub_region
+  FROM master_sub_region
+) AS sub_region ON store.store_sub_region = sub_region.id
+
+LEFT JOIN (
+  SELECT
+    store AS store_id,
+    DATE(input_time) AS so_date,
+    type_so AS so_type,
+    CAST(SUM(stock) AS UNSIGNED) AS total
+  FROM master_stock_daily
+  WHERE DATE(input_time) BETWEEN DATE_SUB(@tanggal, INTERVAL 1 DAY) AND DATE_SUB(@tanggal, INTERVAL -9 DAY)
+  GROUP BY store, DATE(input_time), type_so
+) AS stock ON store.id = stock.store_id
+
+WHERE store.isActive = 1
+GROUP BY region.name, sub_region.sub_region, store.store_name
+ORDER BY region.name, store.store_name ASC;
+```
+
