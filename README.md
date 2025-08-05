@@ -8,6 +8,7 @@
 - Sales `Carrefour` tanggal 01 Mei 2025 merupakan sales week 5 (week terakhir) dari bulan April 2025
 - Sales `Carrefour` tanggal 01 Juni 2025 merupakan sales week 5 (week terakhir) dari bulan Mei 2025
 - Sales `Carrefour` tanggal 01 Juli 2025 merupakan sales week 5 (week terakhir) dari bulan Juni 2025
+- Sales `Carrefour` tanggal 01 Agustus 2025 merupakan sales week 5 (week terakhir) dari bulan Juli 2025
 
 ## 2.1 Query untuk audit report
 ```sql
